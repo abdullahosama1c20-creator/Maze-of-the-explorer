@@ -1,0 +1,62 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build plugin
+        run: mvn -B -ntp clean package
+
+      - name: Package resource pack and data pack
+        run: |
+          mkdir -p dist
+          cp target/ExplorerMaze.jar dist/ExplorerMaze.jar
+          (cd resourcepack && zip -r -X ../dist/ExplorerMaze-ResourcePack.zip .)
+          (cd datapack/explorermaze_advancements && zip -r -X ../../dist/ExplorerMaze-DataPack.zip .)
+          SHA=$(sha1sum dist/ExplorerMaze-ResourcePack.zip | cut -d' ' -f1)
+          echo "$SHA" > dist/resourcepack.sha1
+          {
+            echo "## Explorer Maze"
+            echo
+            echo "- \`ExplorerMaze.jar\` -> server \`plugins/\` folder"
+            echo "- \`ExplorerMaze-DataPack.zip\` -> \`<world>/datapacks/\` of your main world (advancements)"
+            echo "- \`ExplorerMaze-ResourcePack.zip\` -> players download this"
+            echo
+            echo "Resource pack SHA-1 (put into config.yml): \`$SHA\`"
+            echo
+            echo "Resource pack URL for config.yml:"
+            echo "\`https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ExplorerMaze-ResourcePack.zip\`"
+          } > release-notes.md
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExplorerMaze
+          path: dist/*
+
+      - name: Publish GitHub release (on v* tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body_path: release-notes.md

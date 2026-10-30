@@ -40,7 +40,7 @@ public final class PackManager implements Listener {
             try { hash = HexFormat.of().parseHex(sha); } catch (IllegalArgumentException ignored) { }
         }
         p.addResourcePack(PACK_ID, url, hash,
-                Msg.c(plugin.getConfig().getString("resource-pack.prompt", "Texture pack required")), true);
+                plugin.getConfig().getString("resource-pack.prompt", "Texture pack required"), true);
     }
 
     @EventHandler

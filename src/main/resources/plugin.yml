@@ -1,0 +1,18 @@
+name: 'ExplorerMaze'
+version: '${project.version}'
+main: 'com.explorermaze.ExplorerMazePlugin'
+api-version: '26.1'
+description: 'Escape the endless maze. Do not let the Explorer see you.'
+authors: ['ExplorerMaze']
+commands:
+  arena:
+    description: 'Join the hidden Explorer maze arena'
+    usage: '/arena [leave|status|forcestart|stop|regen|reload]'
+    aliases: ['explorer']
+permissions:
+  explorermaze.play:
+    description: 'Use /arena'
+    default: true
+  explorermaze.admin:
+    description: 'Admin sub-commands and arena-world building'
+    default: op

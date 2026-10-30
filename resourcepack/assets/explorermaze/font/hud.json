@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "explorermaze:font/eye.png",
+      "ascent": 12,
+      "height": 16,
+      "chars": ["\ue000"]
+    }
+  ]
+}

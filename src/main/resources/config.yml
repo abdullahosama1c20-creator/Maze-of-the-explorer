@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------
+#  Explorer Maze configuration
+# ---------------------------------------------------------------
+resource-pack:
+  # Host ExplorerMaze-ResourcePack.zip somewhere with a direct link (e.g. a GitHub release asset).
+  url: ''
+  # SHA-1 of that zip (printed by the GitHub build / `sha1sum`). Needed so clients cache the pack.
+  sha1: ''
+  # true  = players must have the pack loaded before /arena works
+  required: true
+  prompt: '&5Explorer Maze needs its texture pack to look scary!'
+
+arena:
+  world-name: 'explorer_arena'    # separate void world - cannot be found by exploring
+  wait-seconds: 60                # lobby countdown (starts when the first player joins, even if alone)
+  gaze-seconds: 3.0               # time the Explorer must keep you in sight before he drags you away
+  warn-range: 28                  # distance at which the spooky sound + eye start
+  sight-range: 24                 # distance at which he can see you (needs line of sight)
+  caught-damage: 6.0              # 6.0 = 3 hearts
+  patrol-speed: 0.20              # Explorer base speed while searching
+  chase-speed: 0.34               # Explorer speed after he saw you (player walking ~0.10 / sprinting ~0.13 attr-equivalent)
+
+maze:
+  cells: 45                       # 45 -> a 181x181 block maze. 61 -> 245x245 (HUGE)
+  path-width: 3                   # hall width in blocks
+  wall-height: 7
+  straightness: 0.88              # higher = longer, straighter, more 'endless' halls
+  chest-chance-dead-end: 0.40
+  chest-chance-other: 0.02
+  lantern-chance: 0.03            # dim soul lanterns hanging from the ceiling
+  blocks-per-tick: 3000           # build speed (lower if the server lags while the maze is generated)
+
+rewards:
+  xp-levels: 100
+  netherite-ingots: 3
+  ancient-city:                   # chance to receive this many Ancient City loot rolls
+    chance: 0.35
+    rolls: 2
+  end-city:                       # chance to receive this many End City loot rolls
+    chance: 0.20
+    rolls: 1
+  claim-timeout-seconds: 90

@@ -1,38 +1,42 @@
-name: Build
 
+name: Build
+ 
 on:
   push:
     branches: [ main, master ]
     tags: [ 'v*' ]
+    paths-ignore: [ '**.md' ]
   pull_request:
   workflow_dispatch:
-
+ 
 permissions:
   contents: write
-
+ 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+ 
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
-
+ 
       - name: Build plugin
         run: mvn -B -ntp clean package
-
+ 
       - name: Package resource pack and data pack
         run: |
           mkdir -p dist
           cp target/ExplorerMaze.jar dist/ExplorerMaze.jar
-          (cd resourcepack && zip -r -X ../dist/ExplorerMaze-ResourcePack.zip .)
-          (cd datapack/explorermaze_advancements && zip -r -X ../../dist/ExplorerMaze-DataPack.zip .)
+          # Fixed timestamps + sorted file list => the zip (and its SHA-1) only changes when the pack content changes
+          find resourcepack datapack -exec touch -d '2026-01-01 00:00:00' {} +
+          (cd resourcepack && find . -type f | sort | zip -X -q ../dist/ExplorerMaze-ResourcePack.zip -@)
+          (cd datapack/explorermaze_advancements && find . -type f | sort | zip -X -q ../../dist/ExplorerMaze-DataPack.zip -@)
           SHA=$(sha1sum dist/ExplorerMaze-ResourcePack.zip | cut -d' ' -f1)
           echo "$SHA" > dist/resourcepack.sha1
           {
@@ -44,19 +48,24 @@ jobs:
             echo
             echo "Resource pack SHA-1 (put into config.yml): \`$SHA\`"
             echo
-            echo "Resource pack URL for config.yml:"
-            echo "\`https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ExplorerMaze-ResourcePack.zip\`"
+            echo "Always-latest resource pack URL for config.yml:"
+            echo "\`https://github.com/${{ github.repository }}/releases/latest/download/ExplorerMaze-ResourcePack.zip\`"
           } > release-notes.md
-
+ 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ExplorerMaze
           path: dist/*
-
-      - name: Publish GitHub release (on v* tags)
-        if: startsWith(github.ref, 'refs/tags/v')
+ 
+      # Every push to main/master (and every v* tag) automatically publishes a GitHub release.
+      - name: Publish release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Explorer Maze build {0}', github.run_number) }}
+          target_commitish: ${{ github.sha }}
           body_path: release-notes.md
+          files: dist/*
+          make_latest: true

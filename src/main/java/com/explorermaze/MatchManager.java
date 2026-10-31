@@ -2,6 +2,7 @@ package com.explorermaze;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -36,7 +37,10 @@ public final class MatchManager {
     private State state = State.IDLE;
     private final Set<UUID> players = new LinkedHashSet<>();
     private final Set<UUID> claiming = new HashSet<>();
-    private final Set<UUID> caught = new HashSet<>();
+    private final Map<UUID, Integer> caughtCount = new HashMap<>();
+    private final Map<UUID, Set<String>> opened = new HashMap<>();
+    private long runStart;
+    private int startCount;
     private final List<BukkitTask> tasks = new ArrayList<>();
     private final Map<UUID, BukkitTask> claimTimers = new HashMap<>();
     private BukkitTask countdownTask;
@@ -52,7 +56,14 @@ public final class MatchManager {
     public boolean isClaiming(Player p) { return claiming.contains(p.getUniqueId()); }
     public int playerCount() { return players.size(); }
     public int countdown() { return countdown; }
-    public void markCaught(Player p) { caught.add(p.getUniqueId()); }
+    public int markCaught(Player p) { return caughtCount.merge(p.getUniqueId(), 1, Integer::sum); }
+
+    /** Counts distinct chests a player opened (for the Ransacker advancement). */
+    public void noteChest(Player p, org.bukkit.block.Block b) {
+        Set<String> s = opened.computeIfAbsent(p.getUniqueId(), k -> new HashSet<>());
+        s.add(b.getX() + "," + b.getY() + "," + b.getZ());
+        if (s.size() >= 5) plugin.advancements().grant(p, "ransacker");
+    }
 
     /** Players currently inside the maze (not in the reward room). */
     public List<Player> mazePlayers() {
@@ -182,7 +193,9 @@ public final class MatchManager {
 
     private void start() {
         state = State.RUNNING;
-        caught.clear();
+        caughtCount.clear();
+        opened.clear();
+        startCount = players.size();
         final int introTicks = 230;
         for (Player p : online()) {
             prepare(p);
@@ -205,8 +218,26 @@ public final class MatchManager {
             titleAll("&4&lRUN", "", 100, 1200, 400);
             soundAll(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 0.6f);
             for (Player p : online()) p.removePotionEffect(PotionEffectType.SLOWNESS);
+            runStart = System.currentTimeMillis();
             plugin.explorer().start();
+            startExitAmbience();
         });
+    }
+
+    /** A faint chime + soul flames at the exit so it can be found by ear when you are close. */
+    private void startExitAmbience() {
+        if (!plugin.getConfig().getBoolean("maze.exit-ambience", true)) return;
+        tasks.add(Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (state != State.RUNNING || !plugin.arenaWorld().isMazeReady()) return;
+            var w = plugin.arenaWorld().world();
+            Location door = plugin.arenaWorld().maze().doorLocation(w);
+            w.spawnParticle(Particle.SOUL_FIRE_FLAME, door.clone().add(0.5, 1.0, 0.5), 12, 0.3, 0.6, 0.3, 0.01);
+            for (Player p : mazePlayers()) {
+                if (!p.getWorld().equals(w)) continue;
+                double d = p.getLocation().distance(door);
+                if (d <= 45) p.playSound(door, Sound.BLOCK_AMETHYST_BLOCK_CHIME, (float) Math.max(0.15, 1.0 - d / 45.0), 0.6f);
+            }
+        }, 40L, 40L));
     }
 
     /** A player stepped through the exit door. */
@@ -233,7 +264,9 @@ public final class MatchManager {
         p.playSound(p.getLocation(), Sound.BLOCK_END_PORTAL_SPAWN, 0.6f, 1.2f);
         Msg.title(p, "&5&lYOU ESCAPED", "&7Press the &denchanting table&7.", 300, 4000, 800);
         plugin.advancements().grant(p, "escaped");
-        if (!caught.contains(winner)) plugin.advancements().grant(p, "untouched");
+        if (!caughtCount.containsKey(winner)) plugin.advancements().grant(p, "untouched");
+        if (startCount >= 2) plugin.advancements().grant(p, "outrun");
+        if (System.currentTimeMillis() - runStart <= 5 * 60_000L) plugin.advancements().grant(p, "speedrunner");
 
         // particles around the table while waiting
         final BukkitTask fx = new BukkitRunnable() {
@@ -331,7 +364,8 @@ public final class MatchManager {
         claimTimers.clear();
         plugin.explorer().stop();
         claiming.clear();
-        caught.clear();
+        caughtCount.clear();
+        opened.clear();
         state = State.IDLE;
     }
 }

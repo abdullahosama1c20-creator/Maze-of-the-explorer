@@ -100,6 +100,13 @@ public final class ArenaListener implements Listener {
         if (!m().isInArena(p)) return;
         Action a = e.getAction();
 
+        // opening a chest: just count it (never cancel, so the chest still opens)
+        if (a == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null
+                && e.getClickedBlock().getType() == Material.CHEST) {
+            if (m().isRunning()) m().noteChest(p, e.getClickedBlock());
+            return;
+        }
+
         // enchanting table in the reward room
         if (a == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null
                 && e.getClickedBlock().getType() == Material.ENCHANTING_TABLE && m().isClaiming(p)) {
@@ -122,8 +129,7 @@ public final class ArenaListener implements Listener {
             ItemFactory.Kind kind = plugin.items().kindOf(hand);
             if (kind != null && m().isRunning() && !m().isClaiming(p)) {
                 e.setCancelled(true);
-                hand.setAmount(hand.getAmount() - 1);
-                plugin.items().use(p, kind);
+                if (plugin.items().use(p, kind)) hand.setAmount(hand.getAmount() - 1);
             }
         }
     }

@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -46,6 +47,7 @@ public final class ExplorerManager {
     private Location patrolTarget, lastKnown;
     private long patrolSince;
     private boolean chasing;
+    private final Random rng = new Random();
 
     public ExplorerManager(ExplorerMazePlugin plugin) { this.plugin = plugin; }
 
@@ -57,6 +59,9 @@ public final class ExplorerManager {
         stop();
         Location sp = plugin.arenaWorld().maze().explorerSpawn(plugin.arenaWorld().world());
         spawn(sp);
+        // short grace period so nobody is caught the instant the intro ends
+        long grace = System.currentTimeMillis() + plugin.getConfig().getInt("arena.grace-seconds", 8) * 1000L;
+        for (Player p : plugin.match().mazePlayers()) immuneUntil.put(p.getUniqueId(), grace);
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 2L);
     }
 
@@ -74,7 +79,7 @@ public final class ExplorerManager {
             attr(e, Attribute.SCALE, 1.35);
             attr(e, Attribute.FOLLOW_RANGE, 160);
             attr(e, Attribute.KNOCKBACK_RESISTANCE, 1.0);
-            attr(e, Attribute.MOVEMENT_SPEED, plugin.getConfig().getDouble("arena.patrol-speed", 0.20));
+            attr(e, Attribute.MOVEMENT_SPEED, plugin.getConfig().getDouble("arena.patrol-speed", 0.23));
         });
         chasing = false;
         patrolTarget = null;
@@ -101,6 +106,12 @@ public final class ExplorerManager {
         slowedUntil = System.currentTimeMillis() + seconds * 1000L;
         if (explorer != null)
             explorer.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, seconds * 20, 3, false, false, false));
+    }
+
+    /** Makes the Explorer glow (visible through walls) for a few seconds. */
+    public void reveal(int seconds) {
+        if (explorer != null)
+            explorer.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, seconds * 20, 0, false, false, false));
     }
 
     public void cloak(Player p, int seconds) {
@@ -174,6 +185,14 @@ public final class ExplorerManager {
             chasing = nowChasing;
             attr(explorer, Attribute.MOVEMENT_SPEED, chasing ? cfg.chaseSpeed : cfg.patrolSpeed);
         }
+        // every so often he "catches a scent" and heads for a random player
+        if (target == null && tick % cfg.scentTicks == 0) {
+            Player v = players.get(rng.nextInt(players.size()));
+            if (v.getWorld().equals(el.getWorld())) {
+                lastKnown = v.getLocation().clone();
+                v.playSound(v.getLocation(), Sound.ENTITY_WARDEN_LISTENING, 0.8f, 0.7f);
+            }
+        }
         if (tick % 10 != 0) return;
         if (target != null) {
             explorer.getPathfinder().moveTo(target.getLocation(), 1.0);
@@ -182,8 +201,13 @@ public final class ExplorerManager {
             if (el.distanceSquared(lastKnown) < 9) lastKnown = null;
             else explorer.getPathfinder().moveTo(lastKnown, 1.0);
         } else {
-            if (patrolTarget == null || el.distanceSquared(patrolTarget) < 9 || now - patrolSince > 15000) {
-                patrolTarget = plugin.arenaWorld().maze().randomCellNear(el.getWorld(), el, 70);
+            if (patrolTarget == null || el.distanceSquared(patrolTarget) < 9 || now - patrolSince > 10000) {
+                Maze mz = plugin.arenaWorld().maze();
+                Player pick = players.get(rng.nextInt(players.size()));
+                if (pick.getWorld().equals(el.getWorld()) && rng.nextDouble() < cfg.huntBias)
+                    patrolTarget = mz.randomCellRing(el.getWorld(), pick.getLocation(), 8, 40);   // roam around a player
+                else
+                    patrolTarget = mz.randomCellNear(el.getWorld(), el, 70);
                 patrolSince = now;
             }
             explorer.getPathfinder().moveTo(patrolTarget, 1.0);
@@ -204,11 +228,14 @@ public final class ExplorerManager {
     private void caught(Player p) {
         UUID id = p.getUniqueId();
         immuneUntil.put(id, System.currentTimeMillis() + 6000L);
-        plugin.match().markCaught(p);
+        int timesCaught = plugin.match().markCaught(p);
         p.playSound(p.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.8f);
         Msg.title(p, "&4&lCAUGHT", "&7He dragged you back into the dark...", 100, 1800, 400);
         p.damage(plugin.getConfig().getDouble("arena.caught-damage", 6.0));
         if (!plugin.match().isRunning() || !plugin.match().isInArena(p) || p.isDead()) return;
+
+        if (p.getHealth() <= 2.0) plugin.advancements().grant(p, "close_call");
+        if (timesCaught >= 3) plugin.advancements().grant(p, "triple_caught");
 
         Location far = plugin.arenaWorld().maze().farFromExit(p.getWorld(), p.getLocation());
         p.teleport(far);
@@ -217,7 +244,7 @@ public final class ExplorerManager {
         plugin.advancements().grant(p, "caught");
 
         // the Explorer wanders off somewhere else
-        Location away = plugin.arenaWorld().maze().randomCellAwayFrom(p.getWorld(), far, 50);
+        Location away = plugin.arenaWorld().maze().randomCellRing(p.getWorld(), far, 40, 90);
         explorer.teleport(away);
         lastKnown = null;
         patrolTarget = null;
@@ -225,8 +252,8 @@ public final class ExplorerManager {
 
     /** Tiny holder so config is read once per tick. */
     private static final class FileConfigView {
-        final double warnRange, sightRange, patrolSpeed, chaseSpeed;
-        final int gazeTicks;
+        final double warnRange, sightRange, patrolSpeed, chaseSpeed, huntBias;
+        final int gazeTicks, scentTicks;
 
         FileConfigView(ExplorerMazePlugin plugin) {
             var c = plugin.getConfig();
@@ -234,6 +261,8 @@ public final class ExplorerManager {
             sightRange = c.getDouble("arena.sight-range", 24);
             patrolSpeed = c.getDouble("arena.patrol-speed", 0.20);
             chaseSpeed = c.getDouble("arena.chase-speed", 0.34);
+            huntBias = c.getDouble("arena.hunt-bias", 0.75);
+            scentTicks = Math.max(40, (int) (c.getDouble("arena.scent-interval-seconds", 30) * 10) * 2);
             gazeTicks = (int) (c.getDouble("arena.gaze-seconds", 3.0) * 20);
         }
     }

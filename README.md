@@ -10,7 +10,7 @@ is dropped into a huge procedurally generated maze with long walls and endless h
 | `src/`, `pom.xml` | The plugin (Java 25, Paper API 26.x) |
 | `.github/workflows/build.yml` | GitHub Actions: builds jar, zips both packs, prints the SHA-1, publishes a release on `v*` tags |
 | `resourcepack/` | Corrupted-withered-skulk bedrock + sculk textures, the Explorer skin, the HUD eye |
-| `datapack/explorermaze_advancements/` | 7 advancements (plugin grants them) |
+| `datapack/explorermaze_advancements/` | 15 advancements (plugin grants them) |
 | `tools/generate_textures.py` | Regenerates every texture (`pip install pillow`) |
 
 ## Install
@@ -30,12 +30,15 @@ is dropped into a huge procedurally generated maze with long walls and endless h
   - sees you (24 blocks, line of sight): he speeds up, you get Darkness + Slowness
   - keeps you in sight for 3 s or touches you: 3 hearts of damage and you are teleported to one of the cells
     furthest from the exit
-- Chests (mostly in dead ends): Regen Pot, Explorer Slower, Swiftness Draught, Shadow Cloak, Exit Whisper (rare).
+- Chests (mostly in dead ends): Regen Pot, Explorer Slower, Swiftness Draught, Shadow Cloak, Exit Whisper (arrow to exit),
+  Echo Locator (distance + pitch), Explorer Tracker (he glows through walls), Breadcrumb Torches.
+- The exit chimes softly and shows soul flames when you are within 45 blocks.
+- The Explorer starts closer, hunts around random players (`arena.hunt-bias`) and sniffs out a player every 30 s.
 - Exit: dark oak door in the outer wall -> black reward room with an enchanting table ->
   100 levels, 3 netherite ingots, plus independent chances for 2x Ancient City loot (35 %) and 1x End City loot (20 %).
 
 ## Commands
-`/arena`, `/arena leave`, `/arena status`; admins: `/arena forcestart | stop | regen | reload`.
+`/arena`, `/arena leave`, `/arena status`, `/arena pack` (re-sends the pack, shows if it is loaded); admins: `/arena forcestart | stop | regen | reload`.
 Permissions: `explorermaze.play` (default true), `explorermaze.admin` (op).
 
 ## Notes

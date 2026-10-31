@@ -16,8 +16,11 @@ arena:
   gaze-seconds: 3.0               # time the Explorer must keep you in sight before he drags you away
   warn-range: 28                  # distance at which the spooky sound + eye start
   sight-range: 24                 # distance at which he can see you (needs line of sight)
+  hunt-bias: 0.75                 # chance (0-1) that he roams near a random player instead of anywhere
+  scent-interval-seconds: 30      # every N s he 'catches a scent' and heads to a random player (you hear a sniff)
+  grace-seconds: 8                # nobody can be seen/caught for this long after the intro
   caught-damage: 6.0              # 6.0 = 3 hearts
-  patrol-speed: 0.20              # Explorer base speed while searching
+  patrol-speed: 0.23              # Explorer base speed while roaming
   chase-speed: 0.34               # Explorer speed after he saw you (player walking ~0.10 / sprinting ~0.13 attr-equivalent)
 
 maze:
@@ -28,6 +31,7 @@ maze:
   chest-chance-dead-end: 0.40
   chest-chance-other: 0.02
   lantern-chance: 0.03            # dim soul lanterns hanging from the ceiling
+  exit-ambience: true             # soft chime + soul flames at the exit when you are within 45 blocks
   blocks-per-tick: 3000           # build speed (lower if the server lags while the maze is generated)
 
 rewards:

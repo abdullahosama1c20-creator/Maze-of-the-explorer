@@ -143,7 +143,7 @@ public final class Maze {
     public Location explorerSpawn(World w) {
         for (int i = 0; i < 200; i++) {
             int cx = rng.nextInt(n), cz = rng.nextInt(n);
-            if (distStart[cx][cz] >= 25) return center(w, cx, cz);
+            if (distStart[cx][cz] >= 10 && distStart[cx][cz] <= 18) return center(w, cx, cz);
         }
         return randomCell(w);
     }
@@ -169,6 +169,17 @@ public final class Maze {
             Location c = randomCell(w);
             double d = c.distance(from);
             if (d >= 20 && d <= maxDist) return c;
+        }
+        return randomCell(w);
+    }
+
+    /** A random cell whose horizontal distance to {@code c} is between min and max blocks. */
+    public Location randomCellRing(World w, Location c, double min, double max) {
+        for (int i = 0; i < 80; i++) {
+            Location cell = randomCell(w);
+            double dx = cell.getX() - c.getX(), dz = cell.getZ() - c.getZ();
+            double d = Math.sqrt(dx * dx + dz * dz);
+            if (d >= min && d <= max) return cell;
         }
         return randomCell(w);
     }

@@ -27,6 +27,13 @@ public final class ArenaCommand implements CommandExecutor, TabCompleter {
             case "leave" -> {
                 if (s instanceof Player p) plugin.match().leave(p);
             }
+            case "pack" -> {
+                if (!(s instanceof Player p)) { s.sendMessage("Players only."); return true; }
+                boolean sent = plugin.packs().send(p);
+                Msg.tell(p, sent ? "&7Pack loaded right now: &e" + plugin.packs().isLoaded(p)
+                        + "&7. Re-sent the pack - watch the console for its status."
+                        : "&cresource-pack.url is empty in config.yml.");
+            }
             case "status" -> s.sendMessage(Msg.c(Msg.PREFIX + "State: &e" + plugin.match().state()
                     + " &7| players: &e" + plugin.match().playerCount()
                     + " &7| maze ready: &e" + plugin.arenaWorld().isMazeReady()));
@@ -49,7 +56,7 @@ public final class ArenaCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            out.add("leave"); out.add("status");
+            out.add("leave"); out.add("status"); out.add("pack");
             if (s.hasPermission("explorermaze.admin")) { out.add("forcestart"); out.add("stop"); out.add("regen"); out.add("reload"); }
             out.removeIf(x -> !x.startsWith(args[0].toLowerCase(Locale.ROOT)));
         }

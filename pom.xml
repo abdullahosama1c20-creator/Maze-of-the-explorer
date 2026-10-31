@@ -31,6 +31,13 @@
       <version>${paper.api.version}</version>
       <scope>provided</scope>
     </dependency>
+    <!-- Optional at runtime (plugin.yml softdepend): the Explorer's Blockbench model via BetterModel. From Maven Central. -->
+    <dependency>
+      <groupId>io.github.toxicity188</groupId>
+      <artifactId>bettermodel-bukkit-api</artifactId>
+      <version>3.6.0</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>

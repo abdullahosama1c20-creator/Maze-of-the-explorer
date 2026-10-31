@@ -44,3 +44,15 @@ rewards:
     chance: 0.20
     rolls: 1
   claim-timeout-seconds: 90
+
+explorer:
+  model:
+    # The Explorer as a real Blockbench model with animations. Needs the free BetterModel plugin on the
+    # server and bettermodel/models/the_explorer.bbmodel in plugins/BetterModel/models/ (see bettermodel/README.md).
+    # Without it (or with enabled: false) he is the re-textured wither skeleton from the resource pack.
+    enabled: true
+    name: 'the_explorer'              # plugins/BetterModel/models/<name>.bbmodel
+    scale: 1.0                        # size of the model (1.0 = exactly as built in Blockbench)
+    run-animation: 'run'              # loops while he chases someone he saw
+    sees-animation: 'sees_and_hits'   # plays once when he spots a player (3 s, the slam lands just before the catch)
+    # 'idle' and 'walk' (if the model has them) are played by BetterModel on its own.

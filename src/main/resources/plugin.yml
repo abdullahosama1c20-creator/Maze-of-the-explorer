@@ -2,12 +2,13 @@ name: 'ExplorerMaze'
 version: '${project.version}'
 main: 'com.explorermaze.ExplorerMazePlugin'
 api-version: '26.1'
+softdepend: ['BetterModel']   # optional: custom Explorer model + animations
 description: 'Escape the endless maze. Do not let the Explorer see you.'
 authors: ['ExplorerMaze']
 commands:
   arena:
     description: 'Join the hidden Explorer maze arena'
-    usage: '/arena [leave|status|forcestart|stop|regen|reload]'
+    usage: '/arena [leave|status|pack|model|forcestart|stop|regen|reload]'
     aliases: ['explorer']
 permissions:
   explorermaze.play:

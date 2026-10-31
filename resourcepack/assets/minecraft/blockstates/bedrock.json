@@ -1,0 +1,48 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "minecraft:block/bedrock"
+      },
+      {
+        "model": "minecraft:block/bedrock",
+        "y": 180
+      },
+      {
+        "model": "explorermaze:block/bedrock_1"
+      },
+      {
+        "model": "explorermaze:block/bedrock_1",
+        "y": 180
+      },
+      {
+        "model": "explorermaze:block/bedrock_2"
+      },
+      {
+        "model": "explorermaze:block/bedrock_2",
+        "y": 180
+      },
+      {
+        "model": "explorermaze:block/bedrock_3"
+      },
+      {
+        "model": "explorermaze:block/bedrock_3",
+        "y": 180
+      },
+      {
+        "model": "explorermaze:block/bedrock_4"
+      },
+      {
+        "model": "explorermaze:block/bedrock_4",
+        "y": 180
+      },
+      {
+        "model": "explorermaze:block/bedrock_5"
+      },
+      {
+        "model": "explorermaze:block/bedrock_5",
+        "y": 180
+      }
+    ]
+  }
+}

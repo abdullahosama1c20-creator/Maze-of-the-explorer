@@ -34,6 +34,9 @@ public final class ArenaCommand implements CommandExecutor, TabCompleter {
                         + "&7. Re-sent the pack - watch the console for its status."
                         : "&cresource-pack.url is empty in config.yml.");
             }
+            case "model" -> {
+                for (String line : plugin.explorer().skin().status()) s.sendMessage(Msg.c(Msg.PREFIX + line));
+            }
             case "status" -> s.sendMessage(Msg.c(Msg.PREFIX + "State: &e" + plugin.match().state()
                     + " &7| players: &e" + plugin.match().playerCount()
                     + " &7| maze ready: &e" + plugin.arenaWorld().isMazeReady()));
@@ -43,11 +46,11 @@ public final class ArenaCommand implements CommandExecutor, TabCompleter {
                     case "forcestart" -> plugin.match().forceStart();
                     case "stop" -> plugin.match().stopAll();
                     case "regen" -> plugin.arenaWorld().buildMaze();
-                    default -> plugin.reloadConfig();
+                    default -> { plugin.reloadConfig(); plugin.explorer().reloadSkin(); }
                 }
                 s.sendMessage(Msg.c(Msg.PREFIX + "&aDone."));
             }
-            default -> s.sendMessage(Msg.c(Msg.PREFIX + "Usage: &e/arena [leave|status]"));
+            default -> s.sendMessage(Msg.c(Msg.PREFIX + "Usage: &e/arena [leave|status|pack|model]"));
         }
         return true;
     }
@@ -56,7 +59,7 @@ public final class ArenaCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            out.add("leave"); out.add("status"); out.add("pack");
+            out.add("leave"); out.add("status"); out.add("pack"); out.add("model");
             if (s.hasPermission("explorermaze.admin")) { out.add("forcestart"); out.add("stop"); out.add("regen"); out.add("reload"); }
             out.removeIf(x -> !x.startsWith(args[0].toLowerCase(Locale.ROOT)));
         }

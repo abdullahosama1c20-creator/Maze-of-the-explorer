@@ -12,6 +12,8 @@ is dropped into a huge procedurally generated maze with long walls and endless h
 | `resourcepack/` | Corrupted-withered-skulk bedrock + sculk textures, the Explorer skin, the HUD eye |
 | `datapack/explorermaze_advancements/` | 15 advancements (plugin grants them) |
 | `tools/generate_textures.py` | Regenerates every texture (`pip install pillow`) |
+| `bettermodel/` | The Explorer's Blockbench model for the BetterModel plugin + server setup notes |
+| `tools/merge_bettermodel_pack.py` | Copies BetterModel's generated pack files into `resourcepack/` |
 
 ## Install
 1. Push this repo to GitHub, tag a release (`git tag v1.0.0 && git push --tags`) - the workflow builds everything.
@@ -25,7 +27,8 @@ is dropped into a huge procedurally generated maze with long walls and endless h
 ## Rules implemented
 - Inventory, XP, health, location are saved to disk on entry and restored on exit (crash-safe). Nothing from the maze is kept.
 - Players are in Adventure mode, no natural regeneration, hunger frozen. Only potions heal (Regen Pot).
-- Explorer: invulnerable, re-textured wither skeleton (scaled 1.35x).
+- Explorer: invulnerable wither skeleton (scaled 1.35x), re-textured by the pack, or replaced by the animated
+  Blockbench model when BetterModel is installed (see below).
   - near (28 blocks): heartbeat sounds + an eye appears on screen (font glyph from the resource pack)
   - sees you (24 blocks, line of sight): he speeds up, you get Darkness + Slowness
   - keeps you in sight for 3 s or touches you: 3 hearts of damage and you are teleported to one of the cells
@@ -37,8 +40,23 @@ is dropped into a huge procedurally generated maze with long walls and endless h
 - Exit: dark oak door in the outer wall -> black reward room with an enchanting table ->
   100 levels, 3 netherite ingots, plus independent chances for 2x Ancient City loot (35 %) and 1x End City loot (20 %).
 
+## Custom Explorer model (BetterModel)
+The Explorer can be a real Blockbench model with animations instead of a re-textured wither skeleton.
+It needs the free **BetterModel** plugin on the server; the step-by-step is in [`bettermodel/README.md`](bettermodel/README.md).
+In short: install BetterModel, drop `bettermodel/models/the_explorer.bbmodel` into `plugins/BetterModel/models/`,
+copy BetterModel's generated `assets` folder into `resourcepack/` and push. `/arena model` shows what the server sees.
+- `walk` / `idle` play by themselves (BetterModel does that), `run` loops while he chases you, `sees_and_hits`
+  plays once when he spots you (its slam at 2.6 s lands just before the 3 s catch).
+- `explorer.model.*` in config.yml: model name, scale, animation names, or `enabled: false` to force the old look.
+- The Explorer Tracker item makes the model glow red through walls.
+- The model's texture is 512x512: the 128x128 drawing upscaled 4x and sharpened (`bettermodel/textures/` keeps both).
+- Corrupted bedrock: six hand-drawn 16x16 tiles upscaled to 64x64, placed at random by
+  `assets/minecraft/blockstates/bedrock.json` (tile 0 is `minecraft/textures/block/bedrock.png`, the other five are
+  `explorermaze:block/bedrock_1..5`). `tools/generate_textures.py` would overwrite `bedrock.png`, so do not run it any more.
+
 ## Commands
-`/arena`, `/arena leave`, `/arena status`, `/arena pack` (re-sends the pack, shows if it is loaded); admins: `/arena forcestart | stop | regen | reload`.
+`/arena`, `/arena leave`, `/arena status`, `/arena pack` (re-sends the pack, shows if it is loaded),
+`/arena model` (is the Blockbench model loaded, which animations it has); admins: `/arena forcestart | stop | regen | reload`.
 Permissions: `explorermaze.play` (default true), `explorermaze.admin` (op).
 
 ## Notes

@@ -23,7 +23,8 @@ import java.util.Random;
 import java.util.UUID;
 
 /**
- * The Explorer: an invulnerable, re-textured wither skeleton that patrols the maze.
+ * The Explorer: an invulnerable wither skeleton that patrols the maze. The resource pack re-textures it;
+ * with the BetterModel plugin the Blockbench model rides on top of it instead ({@link ExplorerSkin}).
  * <ul>
  *   <li>Near you: heartbeat sound + an eye on your screen.</li>
  *   <li>Sees you: he speeds up, you get Darkness + Slowness.</li>
@@ -48,8 +49,21 @@ public final class ExplorerManager {
     private long patrolSince;
     private boolean chasing;
     private final Random rng = new Random();
+    private ExplorerSkin skin;
 
-    public ExplorerManager(ExplorerMazePlugin plugin) { this.plugin = plugin; }
+    public ExplorerManager(ExplorerMazePlugin plugin) {
+        this.plugin = plugin;
+        this.skin = ExplorerSkin.create(plugin);
+    }
+
+    public ExplorerSkin skin() { return skin; }
+
+    /** /arena reload: choose the skin again (BetterModel may have been added) and re-apply it. */
+    public void reloadSkin() {
+        skin.detach();
+        skin = ExplorerSkin.create(plugin);
+        if (explorer != null && explorer.isValid()) skin.attach(explorer);
+    }
 
     public LivingEntity entity() { return explorer; }
 
@@ -81,6 +95,7 @@ public final class ExplorerManager {
             attr(e, Attribute.KNOCKBACK_RESISTANCE, 1.0);
             attr(e, Attribute.MOVEMENT_SPEED, plugin.getConfig().getDouble("arena.patrol-speed", 0.23));
         });
+        skin.attach(explorer);   // Blockbench model (BetterModel) when available, else the pack's wither skeleton skin
         chasing = false;
         patrolTarget = null;
         lastKnown = null;
@@ -88,6 +103,7 @@ public final class ExplorerManager {
 
     public void stop() {
         if (task != null) { task.cancel(); task = null; }
+        skin.detach();
         if (explorer != null) { explorer.remove(); explorer = null; }
         gaze.clear(); immuneUntil.clear(); cloakUntil.clear();
         slowedUntil = 0;
@@ -112,6 +128,7 @@ public final class ExplorerManager {
     public void reveal(int seconds) {
         if (explorer != null)
             explorer.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, seconds * 20, 0, false, false, false));
+        skin.reveal(seconds);
     }
 
     public void cloak(Player p, int seconds) {
@@ -184,6 +201,7 @@ public final class ExplorerManager {
         if (nowChasing != chasing) {
             chasing = nowChasing;
             attr(explorer, Attribute.MOVEMENT_SPEED, chasing ? cfg.chaseSpeed : cfg.patrolSpeed);
+            skin.chase(chasing);
         }
         // every so often he "catches a scent" and heads for a random player
         if (target == null && tick % cfg.scentTicks == 0) {
@@ -220,6 +238,7 @@ public final class ExplorerManager {
 
     private void firstSight(Player p) {
         p.playSound(p.getLocation(), Sound.ENTITY_WARDEN_ROAR, 1.0f, 0.9f);
+        skin.seesPlayer();
         Msg.bar(p, "&4&lHE SEES YOU");
         plugin.advancements().grant(p, "seen");
     }
